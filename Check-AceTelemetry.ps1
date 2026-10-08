@@ -47,6 +47,7 @@ if (-not (TryDir $Destination)) {
   foreach ($alt in @((Join-Path ([Environment]::GetFolderPath('Desktop')) 'ACE-Telemetry-Output'), (Join-Path $env:TEMP 'ACE-Telemetry-Output'))) {
     if (TryDir $alt) { Write-Warning "Cannot write to $Destination; using $alt instead"; $Destination = $alt; break }
   }
+  if (-not (TryDir $Destination)) { Write-Error 'No writable output folder (tried the script folder, the Desktop and TEMP). Extract the zip somewhere you can write to, such as Documents, and run it again.'; exit 1 }
 }
 Write-Host "Output folder: $Destination"
 Write-Host ''
