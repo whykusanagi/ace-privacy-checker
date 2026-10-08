@@ -13,18 +13,19 @@
   process listings, installed programs, documents or any personal files. Nothing on the PC is changed.
 
   Output: <Destination>\<PC>-<timestamp>\ (left in place for inspection), <PC>-<timestamp>.zip next to it, and
-  <PC>-<timestamp>-SUMMARY.txt. Destination defaults to Desktop\ACE-Telemetry.
+  <PC>-<timestamp>-SUMMARY.txt. Destination defaults to ACE-Telemetry-Output next to this script (falls back to the
+  Desktop, then TEMP, when that folder is not writable). The summary opens in Notepad when the run finishes.
 
 .EXAMPLE
   powershell -NoProfile -ExecutionPolicy Bypass -File .\Check-AceTelemetry.ps1
 #>
 [CmdletBinding()]
 param(
-  [string]$Destination = (Join-Path ([Environment]::GetFolderPath('Desktop')) 'ACE-Telemetry'),
+  [string]$Destination = (Join-Path $(if ($PSScriptRoot) { $PSScriptRoot } else { [Environment]::GetFolderPath('Desktop') }) 'ACE-Telemetry-Output'),
   [switch]$NoZip
 )
 
-$Version = '2.0 (2026-09-26)'
+$Version = '2.1 (2026-10-08)'
 $ErrorActionPreference = 'Continue'
 $ProgressPreference = 'SilentlyContinue'
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
@@ -35,8 +36,20 @@ Write-Host ''
 Write-Host "ACE / NIKKE telemetry check $Version  (read-only; nothing on this PC is changed)"
 Write-Host 'Close NIKKE and its launcher first. This takes one to three minutes.'
 Write-Host ''
+if (Get-Process -Name 'nikke', 'nikke_launcher' -ErrorAction SilentlyContinue) {
+  Write-Warning 'NIKKE or its launcher is still running. Close them now, otherwise the result will be incomplete.'
+  $null = Read-Host '  Press Enter once they are closed (or to continue anyway)'
+}
 
-try { New-Item -ItemType Directory -Force -Path $Destination -ErrorAction Stop | Out-Null } catch { $Destination = Join-Path $env:TEMP 'ACE-Telemetry'; New-Item -ItemType Directory -Force -Path $Destination | Out-Null; Write-Warning "Desktop not writable, using $Destination" }
+# output folder: next to the script, else Desktop, else TEMP (a probe file is written because New-Item -Force succeeds on read-only folders)
+function TryDir([string]$d) { try { New-Item -ItemType Directory -Force -Path $d -ErrorAction Stop | Out-Null; $probe = Join-Path $d ".write-test-$PID"; 'ok' | Out-File -FilePath $probe -ErrorAction Stop; Remove-Item -LiteralPath $probe -Force -ErrorAction SilentlyContinue; return $true } catch { return $false } }
+if (-not (TryDir $Destination)) {
+  foreach ($alt in @((Join-Path ([Environment]::GetFolderPath('Desktop')) 'ACE-Telemetry-Output'), (Join-Path $env:TEMP 'ACE-Telemetry-Output'))) {
+    if (TryDir $alt) { Write-Warning "Cannot write to $Destination; using $alt instead"; $Destination = $alt; break }
+  }
+}
+Write-Host "Output folder: $Destination"
+Write-Host ''
 $root = Join-Path $Destination $case
 New-Item -ItemType Directory -Force -Path $root | Out-Null
 $log = Join-Path $root 'collection.log'
@@ -519,5 +532,11 @@ Log "done."
 Write-Host ''
 $summary | ForEach-Object { Write-Host $_ }
 Write-Host ''
-Write-Host "Summary saved to: $summaryPath"
-Write-Host "Folder          : $root"
+Write-Host '=================================================================================='
+Write-Host '  DONE. YOUR REPORT IS THIS FILE:' -ForegroundColor Green
+Write-Host "    $summaryPath"
+Write-Host "  The folder next to it holds everything that was collected$(if ($zip) { '; the .zip beside it is the file to share, if you choose to' })."
+Write-Host '  Opening the report in Notepad and its folder in Explorer now.'
+Write-Host '=================================================================================='
+try { Start-Process notepad.exe -ArgumentList "`"$summaryPath`"" } catch {}
+try { Start-Process explorer.exe -ArgumentList "/select,`"$summaryPath`"" } catch {}

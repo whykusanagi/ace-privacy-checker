@@ -10,15 +10,25 @@ if not exist "%HERE%Check-AceTelemetry.ps1" (
   pause
   exit /b 1
 )
-set "DEST=%USERPROFILE%\Desktop\ACE-Telemetry"
 echo.
 echo   This reads what NIKKE's crash reporter and the ACE anti-cheat stored on and uploaded from this PC,
-echo   decodes it, and writes a summary you can read before sharing anything. Read-only, one to three minutes.
+echo   decodes it, and writes a report you can read before sharing anything. Read-only, one to three minutes.
 echo   Close NIKKE and its launcher first. Do not click inside this window while it runs (press Esc if you did).
 echo.
-powershell -NoProfile -ExecutionPolicy Bypass -File "%HERE%Check-AceTelemetry.ps1" -Destination "%DEST%"
+echo   The report will be written next to this file, in:
+echo     %HERE%ACE-Telemetry-Output
 echo.
-echo   Finished. Open the SUMMARY .txt in %DEST% to see what was found.
-echo   The file to share, if you decide to, is the .zip in the same folder.
+powershell -NoProfile -ExecutionPolicy Bypass -File "%HERE%Check-AceTelemetry.ps1"
+if errorlevel 1 (
+  echo.
+  echo   The check did not finish. Scroll up to read the error, or take a screenshot of this window when asking for help.
+  echo.
+  pause
+  exit /b 1
+)
 echo.
-pause
+echo   Finished. The report opened in Notepad. It is also here:  %HERE%ACE-Telemetry-Output
+echo   The .zip in that folder is the file to share, if you decide to. Delete the folder when you are done with it.
+echo.
+echo   Press any key to close this window.
+pause >nul
