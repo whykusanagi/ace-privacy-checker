@@ -21,7 +21,7 @@
 #>
 [CmdletBinding()]
 param(
-  [string]$Destination = (Join-Path $(if ($PSScriptRoot) { $PSScriptRoot } else { [Environment]::GetFolderPath('Desktop') }) 'ACE-Telemetry-Output'),
+  [string]$Destination,
   [switch]$NoZip
 )
 
@@ -41,6 +41,8 @@ if (Get-Process -Name 'nikke', 'nikke_launcher' -ErrorAction SilentlyContinue) {
   $null = Read-Host '  Press Enter once they are closed (or to continue anyway)'
 }
 
+# default output folder is resolved here, not in param(): with [CmdletBinding()] $PSScriptRoot is still empty while parameter defaults are evaluated, so the script folder was never tried
+if (-not $Destination) { $Destination = Join-Path $(if ($PSScriptRoot) { $PSScriptRoot } else { [Environment]::GetFolderPath('Desktop') }) 'ACE-Telemetry-Output' }
 # output folder: next to the script, else Desktop, else TEMP (a probe file is written because New-Item -Force succeeds on read-only folders)
 function TryDir([string]$d) { try { New-Item -ItemType Directory -Force -Path $d -ErrorAction Stop | Out-Null; $probe = Join-Path $d ".write-test-$PID"; 'ok' | Out-File -FilePath $probe -ErrorAction Stop; Remove-Item -LiteralPath $probe -Force -ErrorAction SilentlyContinue; return $true } catch { return $false } }
 if (-not (TryDir $Destination)) {
