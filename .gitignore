@@ -1,0 +1,6 @@
+# Output of the check, and any collected case data. Never commit these.
+ACE-Telemetry/
+ACE-Evidence/
+*.zip
+*-SUMMARY.txt
+summary.json
