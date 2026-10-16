@@ -25,7 +25,7 @@ param(
   [switch]$NoZip
 )
 
-$Version = '2.1 (2026-10-08)'
+$Version = '2.2 (2026-10-16)'
 $ErrorActionPreference = 'Continue'
 $ProgressPreference = 'SilentlyContinue'
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
