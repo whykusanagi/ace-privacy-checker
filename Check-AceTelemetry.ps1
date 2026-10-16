@@ -426,7 +426,7 @@ $gameVersions = @($rows | Where-Object game_version | ForEach-Object { $_.game_v
 
 # ---------- 7. verdict / cheat / ban wording scan ----------
 Log "[7] scanning for verdict-like wording"
-$verdictRx = '(?i)verdict|cheat|abnormal|punish|\bbanned?\b|\bkick|violat|suspect|macro|inject|\bhack|forbid|illegal|sanction|penalt|blacklist'
+$verdictRx = '(?i)verdict|cheat|abnormal|punish|\bbanned?\b|\bkick|violat|suspect|macro|\binject(ed|ion|or)?\b|\bhack|forbid|illegal|sanction|penalt|blacklist'
 # the game's own code contains a class named NK.Common.Cheat.NKCommandHandler (a debug command handler); log lines naming it are not verdicts
 $ignoreRx = '(?i)NK\.Common\.Cheat\.|referenced script .* is missing'
 $hits = New-Object 'System.Collections.Generic.List[string]'; $scanned = 0; $hitCount = 0; $ignored = 0

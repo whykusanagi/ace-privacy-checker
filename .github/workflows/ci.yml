@@ -1,0 +1,20 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  powershell:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parse script (Windows PowerShell 5.1)
+        shell: powershell
+        run: |
+          $errs = $null
+          [System.Management.Automation.Language.Parser]::ParseFile("$PWD\Check-AceTelemetry.ps1", [ref]$null, [ref]$errs) | Out-Null
+          if ($errs) { $errs | ForEach-Object { Write-Error "$($_.Extent.StartLineNumber): $($_.Message)" }; exit 1 }
+      - name: Verdict regex check
+        shell: powershell
+        run: |
+          $line = Select-String -Path Check-AceTelemetry.ps1 -Pattern '^\$verdictRx = ' | Select-Object -First 1
+          Invoke-Expression $line.Line
+          if ('MultiplayBtContext Use InjectBT Version2' -match $verdictRx) { throw 'InjectBT should not match' }
+          foreach ($s in 'dll injected','Injection detected','injector found') { if ($s -notmatch $verdictRx) { throw "should match: $s" } }
