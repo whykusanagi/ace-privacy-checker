@@ -25,7 +25,7 @@ param(
   [switch]$NoZip
 )
 
-$Version = '2.2 (2026-10-16)'
+$Version = '2.3 (2026-10-17)'
 $ErrorActionPreference = 'Continue'
 $ProgressPreference = 'SilentlyContinue'
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
@@ -273,7 +273,7 @@ if ($gameDir) {
 # ---------- 4. per-user: Player.log, INTL queues, launcher database, account cache names, EAC lines ----------
 Log "[4] user data"
 $profiles = @(Get-ChildItem "$env:SystemDrive\Users" -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -notin 'Public','Default','Default User','All Users' })
-$profilesFound = @(); $aceLogins = 0; $aceLines = 0; $intlGameQueue = 0; $intlLauncherQueue = 0; $cacheAccounts = @(); $launcherAccounts = 0; $eacRefusals = 0; $eacProducts = @(); $eacDates = @()
+$profilesFound = @(); $sessions = @(); $aceLogins = 0; $aceLines = 0; $intlGameQueue = 0; $intlLauncherQueue = 0; $cacheAccounts = @(); $launcherAccounts = 0; $eacRefusals = 0; $eacProducts = @(); $eacDates = @()
 $playerLogs = @()
 foreach ($pr in $profiles) {
   $u = $pr.FullName; $tag = "users\$($pr.Name)"
@@ -286,6 +286,8 @@ foreach ($pr in $profiles) {
   if ($pl) {
     $playerLogs += $pl.FullName
     $lines = @($pl | Select-String -CaseSensitive -Pattern '(^|[^A-Za-z])ACE([^A-Za-z]|$)|AntiCheat|anti-cheat' -ErrorAction SilentlyContinue)
+    # session start/end: first and last timestamped line of each log (Unity keeps this session and the one before)
+    foreach ($f in $pl) { $ts = @(Select-String -LiteralPath $f.FullName -Pattern '^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)' -ErrorAction SilentlyContinue | ForEach-Object { $_.Matches[0].Groups[1].Value }); if ($ts) { $sessions += "$($f.Name): $($ts[0]) .. $($ts[-1]) UTC" } }
     $aceLines += $lines.Count; $aceLogins += @($lines | Where-Object { $_.Line -match 'ACE log in success' }).Count
     Save "$tag\player-ace-lines.txt" ($lines | ForEach-Object { "$($_.Filename):$($_.LineNumber): $($_.Line.Trim())" })
   }
@@ -500,6 +502,7 @@ $summary = @(
   "3) OTHER METADATA THAT LEFT THIS PC"
   "   Level Infinite (INTL SDK) analytics queues, encrypted: $intlGameQueue file(s) in the game queue, $intlLauncherQueue in the launcher queue (copied, cannot be read locally)"
   "   accounts used on this PC (game cache): $($cacheAccounts.Count)$(if ($cacheLast) { ", last used $cacheLast" })   |  launcher database knows $launcherAccounts account(s)"
+  "   play sessions in Player logs (first .. last log line): $(if ($sessions) { $sessions -join '   |  ' } else { 'none' })"
   "   ACE logins in Player.log ('ACE log in success' = account bound to this device): $aceLogins   |  ACE mentions in Player.log: $aceLines"
   "   crash reporter session logs: $csLogCount   |  crash reporter local record: $(if ($lastUser) { $lastUser } else { 'n/a' })"
   ""

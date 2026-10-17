@@ -18,3 +18,10 @@ jobs:
           Invoke-Expression $line.Line
           if ('MultiplayBtContext Use InjectBT Version2' -match $verdictRx) { throw 'InjectBT should not match' }
           foreach ($s in 'dll injected','Injection detected','injector found') { if ($s -notmatch $verdictRx) { throw "should match: $s" } }
+      - name: Session timestamp check
+        shell: powershell
+        run: |
+          $f = "$env:RUNNER_TEMP\Player.log"
+          Set-Content $f "Mono path...`n2026-10-11T02:05:46.679Z|0x2d3c|[BTContext] start`nno stamp`n2026-10-11T04:10:02.001Z|0x2d3c|quit"
+          $ts = @(Select-String -LiteralPath $f -Pattern '^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)' | ForEach-Object { $_.Matches[0].Groups[1].Value })
+          if ($ts[0] -ne '2026-10-11T02:05:46' -or $ts[-1] -ne '2026-10-11T04:10:02') { throw "got $($ts -join ',')" }
